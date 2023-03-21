@@ -1,57 +1,34 @@
 import streamlit as st
 import pandas as pd
-import altair as alt
+import seaborn as sns
+import matplotlib.pyplot as plt
 
-@st.cache
-def load_data(file):
-    df = pd.read_csv(file)
-    return df
+# function to display frequency distribution chart
+def show_frequency_distribution(df, column_name):
+    sns.histplot(data=df, x=column_name)
+    st.pyplot()
 
-def create_chart(df, column_name):
+# function to display most common values chart
+def show_most_common_values(df, column_name):
     value_counts = df[column_name].value_counts()
-    most_common_value = value_counts.index[0]
-    chart_df = pd.DataFrame({column_name: [most_common_value, "Other"],
-                              "count": [value_counts[most_common_value], 
-                                        len(df) - value_counts[most_common_value]]})
-    chart = alt.Chart(chart_df).mark_bar().encode(
-        x=column_name,
-        y='count',
-        color=column_name
-    ).properties(
-        width=500,
-        height=300
-    ).transform_joinaggregate(
-        total='sum(count)',
-    ).transform_calculate(
-        percentage="datum.count / datum.total"
-    ).mark_bar().encode(
-        tooltip=['count', alt.Tooltip('percentage', format='.2%')]
-    ).properties(
-        title=f"Most Common Value in {column_name}"
-    ).mark_text(
-        align='center',
-        baseline='middle',
-        dx=0,
-        dy=5,
-        font={'size': 14}
-    ).encode(
-        text=alt.condition(
-            alt.datum.count > 0,
-            alt.datum[column_name],
-            alt.value(' ')
-        )
-    )
-    return chart
+    st.bar_chart(value_counts)
 
+# main function for Streamlit app
 def main():
-    st.title("Upload CSV File")
-    file = st.file_uploader("Choose a CSV file")
-    if file:
-        df = load_data(file)
-        st.write(df)
-        column_name = st.selectbox("Select a column", df.columns)
-        chart = create_chart(df, column_name)
-        st.altair_chart(chart, use_container_width=True)
+    st.title("CSV Visualization App")
+    file = st.file_uploader("Upload CSV", type=["csv"])
+    if file is not None:
+        df = pd.read_csv(file)
+        st.write(df.head())
 
-if __name__ == '__main__':
+        # let the user select the type of visualization
+        chart_type = st.selectbox("Select chart type:", ["Frequency Distribution", "Most Common Values"])
+        column_name = st.selectbox("Select column to visualize:", df.columns)
+
+        if chart_type == "Frequency Distribution":
+            show_frequency_distribution(df, column_name)
+        elif chart_type == "Most Common Values":
+            show_most_common_values(df, column_name)
+
+if __name__ == "__main__":
     main()
